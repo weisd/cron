@@ -245,6 +245,13 @@ func (c *Cron) Stop() {
 	c.running = false
 }
 
+// flush all scheduler
+func (c *Cron) Flush() {
+	c.Stop()
+	c.entries = nil
+	c.Start()
+}
+
 // entrySnapshot returns a copy of the current cron entry list.
 func (c *Cron) entrySnapshot() []*Entry {
 	entries := []*Entry{}
