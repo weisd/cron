@@ -96,6 +96,10 @@ type FuncJob func()
 
 func (f FuncJob) Run() { f() }
 
+func (f FuncJob) MarshalJSON() ([]byte, error) {
+	return []byte("{}"), nil
+}
+
 // AddFunc adds a func to the Cron to be run on the given schedule.
 func (c *Cron) AddFunc(desc, spec string, cmd func()) (*Entry, error) {
 	return c.AddJob(desc, spec, FuncJob(cmd))
