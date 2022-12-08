@@ -167,23 +167,32 @@ func (c *Cron) AddJob(title, spec string, cmd Job) (EntryID, error) {
 	if err != nil {
 		return 0, err
 	}
-	return c.schedule(title, spec, schedule, cmd), nil
+	return c.schedule(title, spec, schedule, cmd, true), nil
 }
 
 // Schedule adds a Job to the Cron to be run on the given schedule.
 // The job is wrapped with the configured Chain.
 func (c *Cron) Schedule(title string, schedule Schedule, cmd Job) EntryID {
-	return c.schedule(title, "", schedule, cmd)
+	return c.schedule(title, "", schedule, cmd, true)
+}
+
+// AddEntry 添加任务不一定执行
+func (c *Cron) AddEntry(title string, spec string, cmd Job, enable bool) (EntryID, error) {
+	schedule, err := c.parser.Parse(spec)
+	if err != nil {
+		return 0, err
+	}
+	return c.schedule(title, spec, schedule, cmd, enable), nil
 }
 
 // schedule adds a Job to the Cron to be run on the given schedule.
 // The job is wrapped with the configured Chain.
-func (c *Cron) schedule(title string, spec string, schedule Schedule, cmd Job) EntryID {
+func (c *Cron) schedule(title string, spec string, schedule Schedule, cmd Job, enable bool) EntryID {
 	c.runningMu.Lock()
 	defer c.runningMu.Unlock()
 	c.nextID++
 	entry := &Entry{
-		Enable:     true,
+		Enable:     enable,
 		Title:      title,
 		Spec:       spec,
 		ID:         c.nextID,
@@ -307,6 +316,8 @@ func (c *Cron) run(ctx context.Context) error {
 				// Run every entry whose next time was less than now
 				for _, e := range c.entries {
 					if !e.Enable {
+						e.Prev = time.Time{}
+						e.Next = time.Time{}
 						continue
 					}
 					if e.Next.After(now) || e.Next.IsZero() {
